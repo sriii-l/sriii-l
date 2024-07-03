@@ -3,22 +3,36 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 import pymongo
 from streamlit_lottie import st_lottie
-client = pymongo.MongoClient(st.secrets["key"])
+
+# Access MongoDB URI from Streamlit secrets
+mongo_uri = st.secrets["MONGO_URI"]["uri"]
+
+# Initialize MongoDB client
+client = pymongo.MongoClient(mongo_uri)
 db = client["project"]
 collection = db["Donation"]
-usercol=db["userdata"]
-selected=option_menu(menu_title=None,options=["Home","Donate Blood","Need Blood"],icons=["house","heart",""],orientation="horizontal")
+usercol = db["userdata"]
+
+# Option menu for navigation
+selected = option_menu(
+    menu_title=None, 
+    options=["Home", "Donate Blood", "Need Blood"],
+    icons=["house", "heart", ""],
+    orientation="horizontal"
+)
+
+# Session state for login status
 if 'key' not in st.session_state:
     st.session_state['key'] = False
 
 def homie():
-    choice=option_menu(menu_title=None,options=["New User","Existing User","Log out"])
-    
-    st.title("Blood Donation Potal")
+    choice = option_menu(menu_title=None, options=["New User", "Existing User", "Log out"])
+    st.title("Blood Donation Portal")
+
     with st.container():
-        left_col,right_col=st.columns(2)
+        left_col, right_col = st.columns(2)
         with left_col:
-            if(choice=="New User"):
+            if choice == "New User":
                 st.subheader("New User")
                 st.write("Please register to access the Blood Donation Portal.")
                 username = st.text_input("Username")
@@ -26,28 +40,25 @@ def homie():
                 email = st.text_input("Email")
 
                 if st.button("Register"):
-
                     if not username or not password or not email:
                         st.error("Please fill in all required fields.")
                     else:
-                        # Check if the username is already taken (you can add more validation)
                         existing_user = usercol.find_one({"username": username})
                         if existing_user:
                             st.error("Username is already taken. Please choose a different one.")
                         else:
-                            # Save user registration data to MongoDB
                             user_data = {
                                 "username": username,
                                 "password": password,
                                 "email": email,
                             }
                             usercol.insert_one(user_data)
-                            st.success("Registration successful!")
+                            st.success("Registration successful!")
                             st.write("Go To Login")
-            elif(choice=="Existing User"):
+
+            elif choice == "Existing User":
                 st.write("Please log in to access the Blood Donation Portal.")
                 with st.form("User Details"):
-                    
                     username = st.text_input("Username")
                     password = st.text_input("Password", type="password")
 
@@ -55,28 +66,27 @@ def homie():
                         if not username or not password:
                             st.write("Please fill in all required fields.")
                         else:
-                            # Check if the user exists in the database
                             user = usercol.find_one({"username": username, "password": password})
                             if user:
                                 st.success("Login successful!")
-                                st.session_state.key=True
-                                # You can add logic here to redirect to the donate or receiver page
-                                # For simplicity, we'll display buttons to simulate the pages
-                                
+                                st.session_state.key = True
                             else:
-                                st.error("Invalid username or password. Please try again.")
-                           
-            elif(choice=="Log out"):
-                if(st.session_state.key):     
+                                st.error("Invalid username or password. Please try again.")
+
+            elif choice == "Log out":
+                if st.session_state.key:     
                     st.success("Successfully Logged out")
                     st.session_state.key = False
                 else:
                     st.error("Please Login First")
+
         with right_col:
-            st.markdown('<iframe src="https://lottie.host/?file=dc159f25-5e8c-4a5a-83d3-62fc1e8291c6/fG8aNuB6lA.json" width="500px" height="500px" style="border-radius:50px"></iframe>',unsafe_allow_html=True)
+            st.markdown(
+                '<iframe src="https://lottie.host/?file=dc159f25-5e8c-4a5a-83d3-62fc1e8291c6/fG8aNuB6lA.json" width="500px" height="500px" style="border-radius:50px"></iframe>', 
+                unsafe_allow_html=True
+            )
 
 def navigate_to_donate():
-    
     if st.session_state.key:
         st.subheader("Donor")
         with st.form("Donor Details"):
@@ -100,16 +110,13 @@ def navigate_to_donate():
                         "location": location
                     }
                     collection.insert_one(donor_data)  
-                    st.success("Donor details submitted successfully.")
+                    st.success("Donor details submitted successfully.")
     else:
         st.error("Please Register/Login")
 
 def navigate_to_receive():
-    
-    
     if st.session_state.key:
         st.subheader("Receiver")
-    # Create a form for receiver details
         with st.form("Receiver Details"):
             st.write("Please enter your receiver details:")
             name = st.text_input("Full Name")
@@ -125,9 +132,9 @@ def navigate_to_receive():
                 if not name or not contact or not location or not urgency or not consent:
                     st.error("Please fill in all required fields.")
                 else:
-                    query = {"location": location,"blood_type": blood_type}
+                    query = {"location": location, "blood_type": blood_type}
                     matching_donors = collection.find(query)
-                    if matching_donors.count()!=0:
+                    if matching_donors.count() != 0:
                         st.subheader("Matching Donors")
                         for donor in matching_donors:
                             st.write(f"Name: {donor['name']}")
@@ -144,13 +151,9 @@ def navigate_to_receive():
     else:
         st.error("Please Register/Login")  
 
-if selected=="Home":
+if selected == "Home":
     homie()
-
-elif selected=="Donate Blood":
-
+elif selected == "Donate Blood":
     navigate_to_donate()
-
-
-elif selected=="Need Blood":
+elif selected == "Need Blood":
     navigate_to_receive()
