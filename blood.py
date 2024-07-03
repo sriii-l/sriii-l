@@ -4,8 +4,12 @@ from streamlit_option_menu import option_menu
 import pymongo
 from streamlit_lottie import st_lottie
 
-# Access MongoDB URI from Streamlit secrets
-mongo_uri = st.secrets["MONGO_URI"]["uri"]
+# Try to access MongoDB URI from Streamlit secrets
+try:
+    mongo_uri = st.secrets["MONGO_URI"]["uri"]
+except KeyError:
+    st.error("MongoDB URI is not configured. Please set it in Streamlit secrets.")
+    st.stop()
 
 # Initialize MongoDB client
 client = pymongo.MongoClient(mongo_uri)
@@ -157,3 +161,7 @@ elif selected == "Donate Blood":
     navigate_to_donate()
 elif selected == "Need Blood":
     navigate_to_receive()
+
+   
+                              
+           
