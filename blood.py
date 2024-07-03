@@ -161,7 +161,3 @@ elif selected == "Donate Blood":
     navigate_to_donate()
 elif selected == "Need Blood":
     navigate_to_receive()
-
-   
-                              
-           
